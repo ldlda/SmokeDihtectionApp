@@ -4,7 +4,7 @@ import okhttp3.*;
 import java.io.IOException;
 
 public class ApiClient {
-    public static final String BASE_URL = "http://192.168.1.8:8000";
+    public static final String BASE_URL = "http://lda.local:8000"; // fuck this
 
     private static final OkHttpClient client = new OkHttpClient();
 

@@ -1,6 +1,10 @@
 package com.example.smokedetection;
 
+import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -21,7 +25,17 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_login);
+
+        android.view.View root = findViewById(R.id.root);
+        int pl = root.getPaddingLeft(), pt = root.getPaddingTop(),
+            pr = root.getPaddingRight(), pb = root.getPaddingBottom();
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, windowInsets) -> {
+            Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(pl + insets.left, pt + insets.top, pr + insets.right, pb + insets.bottom);
+            return WindowInsetsCompat.CONSUMED;
+        });
 
         // Check if user is already logged in
         // If we find a saved user ID, we go straight to the main screen
