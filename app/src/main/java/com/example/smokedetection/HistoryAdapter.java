@@ -7,9 +7,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.bumptech.glide.Glide;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -42,7 +45,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
 
             // Load Image from Python Server
             // Add the Base URL: "http://192...:8000/static/alerts/..."
-            String fullUrl = ApiClient.BASE_URL + item.getString("image_path");
+            String fullUrl = ApiClient.getBaseUrl() + item.getString("image_path");
 
             Glide.with(context)
                     .load(fullUrl)
@@ -56,7 +59,9 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
                 context.startActivity(intent);
             });
 
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

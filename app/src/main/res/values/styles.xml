@@ -15,16 +15,16 @@
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
     </style>
+
     <style name="ShapeAppearanceOverlay.Air">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
     </style>
+
     <style name="ShapeAppearanceOverlay">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">12dp</item>
     </style>
-
-
 
 
 </resources>

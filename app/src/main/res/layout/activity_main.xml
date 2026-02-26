@@ -3,25 +3,25 @@
     android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#F5F5F5"
     android:orientation="vertical"
-    android:padding="20dp"
-    android:background="#F5F5F5">
+    android:padding="20dp">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"
         android:text="My Cameras"
         android:textSize="24sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="20dp"/>
+        android:textStyle="bold" />
 
     <androidx.cardview.widget.CardView
         android:id="@+id/cardCamera"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:clickable="true"
-        android:foreground="?android:attr/selectableItemBackground"
-        android:elevation="4dp">
+        android:elevation="4dp"
+        android:foreground="?android:attr/selectableItemBackground">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -32,17 +32,17 @@
                 android:id="@+id/imgCameraPreview"
                 android:layout_width="match_parent"
                 android:layout_height="200dp"
+                android:background="#000000"
                 android:scaleType="centerCrop"
-                android:src="@android:drawable/ic_menu_camera"
-                android:background="#000000"/>
+                android:src="@android:drawable/ic_menu_camera" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Corridor"
                 android:padding="15dp"
+                android:text="Corridor"
                 android:textSize="16sp"
-                android:textStyle="bold"/>
+                android:textStyle="bold" />
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
@@ -50,23 +50,23 @@
         android:id="@+id/btnRefresh"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Refresh Snapshot"
-        android:layout_marginTop="10dp"/>
+        android:layout_marginTop="10dp"
+        android:text="Refresh Snapshot" />
 
     <Button
         android:id="@+id/btnHistory"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="View Alert History"
+        android:layout_marginTop="10dp"
         android:backgroundTint="#FF9800"
-        android:layout_marginTop="10dp"/>
+        android:text="View Alert History" />
 
     <Button
         android:id="@+id/btnLogout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Logout"
+        android:layout_marginTop="50dp"
         android:backgroundTint="#FF4444"
-        android:layout_marginTop="50dp"/>
+        android:text="Logout" />
 
 </LinearLayout>

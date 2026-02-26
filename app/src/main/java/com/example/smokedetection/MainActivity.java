@@ -32,9 +32,12 @@ public class MainActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
+        // Ensure ApiClient has the saved server URL (covers skip-login path)
+        ApiClient.init(this);
+
         android.view.View root = findViewById(R.id.root);
         int pl = root.getPaddingLeft(), pt = root.getPaddingTop(),
-            pr = root.getPaddingRight(), pb = root.getPaddingBottom();
+                pr = root.getPaddingRight(), pb = root.getPaddingBottom();
         ViewCompat.setOnApplyWindowInsetsListener(root, (v, windowInsets) -> {
             Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(pl + insets.left, pt + insets.top, pr + insets.right, pb + insets.bottom);

@@ -1,18 +1,24 @@
 package com.example.smokedetection;
 
-import androidx.activity.EdgeToEdge;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+
 import org.json.JSONObject;
+
 import java.io.IOException;
+
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.Response;
@@ -21,6 +27,8 @@ public class LoginActivity extends AppCompatActivity {
 
     private EditText inputUser, inputPass;
     private Button btnLogin, btnRegister;
+    private int titleTaps = 0;
+    private Toast tapToast;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,7 +38,7 @@ public class LoginActivity extends AppCompatActivity {
 
         android.view.View root = findViewById(R.id.root);
         int pl = root.getPaddingLeft(), pt = root.getPaddingTop(),
-            pr = root.getPaddingRight(), pb = root.getPaddingBottom();
+                pr = root.getPaddingRight(), pb = root.getPaddingBottom();
         ViewCompat.setOnApplyWindowInsetsListener(root, (v, windowInsets) -> {
             Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(pl + insets.left, pt + insets.top, pr + insets.right, pb + insets.bottom);
@@ -39,6 +47,7 @@ public class LoginActivity extends AppCompatActivity {
 
         // Check if user is already logged in
         // If we find a saved user ID, we go straight to the main screen
+        ApiClient.init(this);
         SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
         if (prefs.getInt("user_id", -1) != -1) {
             goToMain();
@@ -50,6 +59,20 @@ public class LoginActivity extends AppCompatActivity {
         inputPass = findViewById(R.id.inputPass);
         btnLogin = findViewById(R.id.btnLogin);
         btnRegister = findViewById(R.id.btnRegister);
+
+        // Hidden server config: tap the title 5 times
+        TextView txtTitle = findViewById(R.id.txtTitle);
+        txtTitle.setOnClickListener(v -> {
+            titleTaps++;
+            if (titleTaps >= 5) {
+                titleTaps = 0;
+                showServerDialog();
+            } else if (titleTaps >= 3) {
+                if (tapToast != null) tapToast.cancel();
+                tapToast = Toast.makeText(this, (5 - titleTaps) + " taps to server config", Toast.LENGTH_SHORT);
+                tapToast.show();
+            }
+        });
 
         // Set up the button clicks
         // True means we are trying to Login
@@ -125,11 +148,56 @@ public class LoginActivity extends AppCompatActivity {
 
     private void goToMain() {
         startActivity(new Intent(this, MainActivity.class));
-        finish(); // Close this activity so the Back button does not come back here
+        finish();
     }
 
     private void setButtonsEnabled(boolean enable) {
         btnLogin.setEnabled(enable);
         btnRegister.setEnabled(enable);
+    }
+
+    private void showServerDialog() {
+        EditText input = new EditText(this);
+        input.setText(ApiClient.getBaseUrl());
+        input.setSelectAllOnFocus(true);
+        int pad = (int) (20 * getResources().getDisplayMetrics().density);
+
+        new AlertDialog.Builder(this)
+                .setTitle("Server")
+                .setMessage("http://<ip>:<port>")
+                .setView(input, pad, 0, pad, 0)
+                .setPositiveButton("Test & Save", (d, w) -> {
+                    String url = input.getText().toString().trim();
+                    if (url.isEmpty()) return;
+
+                    // Temporarily set so ping() hits the new URL
+                    ApiClient.setServer(this, url);
+
+                    ApiClient.ping(new Callback() {
+                        @Override
+                        public void onFailure(Call call, IOException e) {
+                            runOnUiThread(() ->
+                                    Toast.makeText(LoginActivity.this,
+                                            "Unreachable: " + e.getMessage(), Toast.LENGTH_LONG).show()
+                            );
+                        }
+
+                        @Override
+                        public void onResponse(Call call, Response response) {
+                            boolean ok = response.isSuccessful();
+                            runOnUiThread(() -> {
+                                if (ok) {
+                                    Toast.makeText(LoginActivity.this,
+                                            "Connected to " + url, Toast.LENGTH_SHORT).show();
+                                } else {
+                                    Toast.makeText(LoginActivity.this,
+                                            "Server returned " + response.code(), Toast.LENGTH_LONG).show();
+                                }
+                            });
+                        }
+                    });
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 }

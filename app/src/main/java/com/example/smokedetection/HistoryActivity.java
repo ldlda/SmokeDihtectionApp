@@ -1,5 +1,12 @@
 package com.example.smokedetection;
 
+import android.content.SharedPreferences;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.ImageButton;
+import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -8,12 +15,11 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import android.content.SharedPreferences;
-import android.os.Bundle;
-import android.view.View;
-import android.widget.ImageButton;
-import android.widget.TextView;
-import android.widget.Toast;
+
+import org.json.JSONArray;
+
+import java.io.IOException;
+
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.FormBody;
@@ -21,8 +27,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-import org.json.JSONArray;
-import java.io.IOException;
 
 public class HistoryActivity extends AppCompatActivity {
 
@@ -82,7 +86,7 @@ public class HistoryActivity extends AppCompatActivity {
                 .build();
 
         Request request = new Request.Builder()
-                .url(ApiClient.BASE_URL + "/clear_history") // Calls the Python function to clear history
+                .url(ApiClient.getBaseUrl() + "/clear_history")
                 .post(formBody)
                 .build();
 
@@ -107,7 +111,7 @@ public class HistoryActivity extends AppCompatActivity {
         int userId = prefs.getInt("user_id", -1);
 
         Request request = new Request.Builder()
-                .url(ApiClient.BASE_URL + "/history?user_id=" + userId)
+                .url(ApiClient.getBaseUrl() + "/history?user_id=" + userId)
                 .build();
 
         client.newCall(request).enqueue(new Callback() {
@@ -137,7 +141,9 @@ public class HistoryActivity extends AppCompatActivity {
                                 HistoryAdapter adapter = new HistoryAdapter(HistoryActivity.this, data);
                                 recyclerHistory.setAdapter(adapter);
                             }
-                        } catch (Exception e) { e.printStackTrace(); }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     });
                 }
             }

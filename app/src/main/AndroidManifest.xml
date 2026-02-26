@@ -13,7 +13,6 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <application
-        android:usesCleartextTraffic="true"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -21,7 +20,8 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.SmokeDetectionApp">
+        android:theme="@style/Theme.SmokeDetectionApp"
+        android:usesCleartextTraffic="true">
 
         <activity
             android:name=".MainActivity"
@@ -44,8 +44,8 @@
 
         <service
             android:name=".SmokeAlert"
-            android:foregroundServiceType="dataSync"
-            android:exported="false" />
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
 
     </application>
 

@@ -8,15 +8,17 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.IBinder;
-import android.util.Log;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.IOException;
+
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import org.json.JSONArray;
-import org.json.JSONObject;
-import java.io.IOException;
 
 public class SmokeAlert extends Service {
 
@@ -26,6 +28,15 @@ public class SmokeAlert extends Service {
     private Handler handler = new Handler();
     private OkHttpClient client = new OkHttpClient();
     private String lastAlertTimestamp = ""; // Keeps track of the last alert we saw
+    // The Loop
+    private Runnable checkServerRunnable = new Runnable() {
+        @Override
+        public void run() {
+            checkServerForSmoke();
+            // Schedule this same function to run again in 5 seconds
+            handler.postDelayed(this, CHECK_INTERVAL);
+        }
+    };
 
     @Override
     public void onCreate() {
@@ -41,16 +52,6 @@ public class SmokeAlert extends Service {
         handler.post(checkServerRunnable);
     }
 
-    // The Loop
-    private Runnable checkServerRunnable = new Runnable() {
-        @Override
-        public void run() {
-            checkServerForSmoke();
-            // Schedule this same function to run again in 5 seconds
-            handler.postDelayed(this, CHECK_INTERVAL);
-        }
-    };
-
     private void checkServerForSmoke() {
         // Get the logged-in User ID so we check the correct history
         SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
@@ -60,7 +61,7 @@ public class SmokeAlert extends Service {
         if (userId == -1) return;
 
         // Build the request URL
-        String url = ApiClient.BASE_URL + "/history?user_id=" + userId;
+        String url = ApiClient.getBaseUrl() + "/history?user_id=" + userId;
         Request request = new Request.Builder().url(url).build();
 
         // Send request to server
@@ -97,7 +98,9 @@ public class SmokeAlert extends Service {
                             lastAlertTimestamp = timestamp;
                         }
                     }
-                } catch (Exception e) { e.printStackTrace(); }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         });
     }
@@ -142,7 +145,9 @@ public class SmokeAlert extends Service {
     }
 
     @Override
-    public IBinder onBind(Intent intent) { return null; }
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
 
     @Override
     public void onDestroy() {
