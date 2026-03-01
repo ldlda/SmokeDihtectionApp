@@ -148,6 +148,28 @@
                 android:text="Stop" />
         </LinearLayout>
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btnPhoneLiveStart"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Start Phone Live" />
+
+            <Button
+                android:id="@+id/btnPhonePushFrame"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:text="Push Phone Frame" />
+        </LinearLayout>
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -171,6 +193,13 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:text="Submit Clip Path" />
+
+        <Button
+            android:id="@+id/btnClipPickUpload"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Pick &amp; Upload Image/Video" />
 
         <LinearLayout
             android:layout_width="match_parent"

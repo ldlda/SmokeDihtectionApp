@@ -2,9 +2,16 @@ package com.example.smokedetection;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.net.Uri;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 import okhttp3.Callback;
 import okhttp3.FormBody;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -200,5 +207,78 @@ public class ApiClient {
                 .url(endpoint("/clips/" + jobId))
                 .build();
         client.newCall(request).enqueue(callback);
+    }
+
+    public static void startPhoneLive(Callback callback) {
+        Request request = new Request.Builder()
+                .url(endpoint("/live/start_phone"))
+                .post(new FormBody.Builder().build())
+                .build();
+        client.newCall(request).enqueue(callback);
+    }
+
+    public static void submitClipFile(Context context, Uri uri, String fileName, Callback callback) {
+        try {
+            byte[] bytes = readAllBytes(context, uri);
+            String contentType = context.getContentResolver().getType(uri);
+            boolean isImage = contentType != null && contentType.startsWith("image/");
+            String mime = isImage ? "image/*" : "video/*";
+            String resolvedName = fileName;
+            if (!resolvedName.contains(".")) {
+                resolvedName = isImage ? (resolvedName + ".jpg") : (resolvedName + ".mp4");
+            }
+
+            RequestBody fileBody = RequestBody.create(bytes, MediaType.parse(mime));
+            RequestBody body = new MultipartBody.Builder()
+                    .setType(MultipartBody.FORM)
+                    .addFormDataPart("file", resolvedName, fileBody)
+                    .build();
+
+            Request request = new Request.Builder()
+                    .url(endpoint("/clips/submit"))
+                    .post(body)
+                    .build();
+            client.newCall(request).enqueue(callback);
+        } catch (IOException e) {
+            callback.onFailure(null, e);
+        }
+    }
+
+    public static void pushLiveFrame(Context context, Uri uri, String fileName, Callback callback) {
+        try {
+            byte[] bytes = readAllBytes(context, uri);
+            pushLiveFrameBytes(bytes, fileName, callback);
+        } catch (IOException e) {
+            callback.onFailure(null, e);
+        }
+    }
+
+        public static void pushLiveFrameBytes(byte[] bytes, String fileName, Callback callback) {
+        RequestBody fileBody = RequestBody.create(bytes, MediaType.parse("image/*"));
+        RequestBody body = new MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart("frame", fileName, fileBody)
+            .build();
+
+        Request request = new Request.Builder()
+            .url(endpoint("/live/push_frame"))
+            .post(body)
+            .build();
+        client.newCall(request).enqueue(callback);
+        }
+
+    private static byte[] readAllBytes(Context context, Uri uri) throws IOException {
+        InputStream input = context.getContentResolver().openInputStream(uri);
+        if (input == null) {
+            throw new IOException("Could not open selected file");
+        }
+        try (InputStream in = input; ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            byte[] buffer = new byte[8192];
+            int n;
+            while ((n = in.read(buffer)) > 0) {
+                out.write(buffer, 0, n);
+            }
+            return out.toByteArray();
+        }
     }
 }

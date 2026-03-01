@@ -2,6 +2,7 @@ package com.example.smokedetection;
 
 import android.Manifest;
 import android.content.Intent;
+import android.net.Uri;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -12,6 +13,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -34,16 +37,22 @@ public class MainActivity extends AppCompatActivity {
     private ImageView imgCameraPreview;
     private Button btnLogout, btnRefresh, btnHistory;
     private Button btnLiveStatus, btnLiveStart, btnLiveStop, btnLivePause, btnLiveResume, btnLiveSwitch;
-    private Button btnClipSubmit, btnClipList, btnClipGet;
+    private Button btnClipSubmit, btnClipList, btnClipGet, btnClipPickUpload;
+    private Button btnPhoneLiveStart, btnPhonePushFrame;
     private View cardCamera;
     private EditText edtSource, edtClipPath, edtClipJobId;
     private TextView txtRuntimeStatus;
+    private ActivityResultLauncher<String> clipPickerLauncher;
+    private ActivityResultLauncher<String> framePickerLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
+
+        clipPickerLauncher = registerForActivityResult(new ActivityResultContracts.GetContent(), this::onClipPicked);
+        framePickerLauncher = registerForActivityResult(new ActivityResultContracts.GetContent(), this::onFramePicked);
 
         // Ensure ApiClient has the saved server URL (covers skip-login path)
         ApiClient.init(this);
@@ -79,6 +88,9 @@ public class MainActivity extends AppCompatActivity {
         btnClipSubmit = findViewById(R.id.btnClipSubmit);
         btnClipList = findViewById(R.id.btnClipList);
         btnClipGet = findViewById(R.id.btnClipGet);
+        btnClipPickUpload = findViewById(R.id.btnClipPickUpload);
+        btnPhoneLiveStart = findViewById(R.id.btnPhoneLiveStart);
+        btnPhonePushFrame = findViewById(R.id.btnPhonePushFrame);
         edtSource = findViewById(R.id.edtSource);
         edtClipPath = findViewById(R.id.edtClipPath);
         edtClipJobId = findViewById(R.id.edtClipJobId);
@@ -131,6 +143,7 @@ public class MainActivity extends AppCompatActivity {
             }
             runAction("Clip Submit", cb -> ApiClient.submitClipPath(clipPath, cb));
         });
+        btnClipPickUpload.setOnClickListener(v -> clipPickerLauncher.launch("*/*"));
         btnClipList.setOnClickListener(v -> runAction("Clips List", cb -> ApiClient.listClipJobs(cb)));
         btnClipGet.setOnClickListener(v -> {
             String jobId = edtClipJobId.getText().toString().trim();
@@ -140,6 +153,9 @@ public class MainActivity extends AppCompatActivity {
             }
             runAction("Clip Get", cb -> ApiClient.getClipJob(jobId, cb));
         });
+
+        btnPhoneLiveStart.setOnClickListener(v -> runAction("Phone Live Start", cb -> ApiClient.startPhoneLive(cb)));
+        btnPhonePushFrame.setOnClickListener(v -> framePickerLauncher.launch("image/*"));
 
         btnLogout.setOnClickListener(v -> {
             getSharedPreferences("AppPrefs", MODE_PRIVATE).edit().clear().apply();
@@ -186,5 +202,15 @@ public class MainActivity extends AppCompatActivity {
     private void setStatus(String message, boolean isError) {
         txtRuntimeStatus.setText(message);
         txtRuntimeStatus.setTextColor(isError ? 0xFFD32F2F : 0xFF1B5E20);
+    }
+
+    private void onClipPicked(Uri uri) {
+        if (uri == null) return;
+        runAction("Clip Upload", cb -> ApiClient.submitClipFile(this, uri, "mobile_upload", cb));
+    }
+
+    private void onFramePicked(Uri uri) {
+        if (uri == null) return;
+        runAction("Push Phone Frame", cb -> ApiClient.pushLiveFrame(this, uri, "phone_frame.jpg", cb));
     }
 }
