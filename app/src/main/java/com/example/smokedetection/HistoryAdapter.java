@@ -12,6 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.RequestOptions;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -47,10 +48,21 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
             // Add the Base URL: "http://192...:8000/static/alerts/..."
             String fullUrl = ApiClient.getBaseUrl() + item.getString("image_path");
 
-            Glide.with(context)
+                boolean isVideo = isVideoUrl(fullUrl);
+
+                if (isVideo) {
+                Glide.with(context)
+                    .load(fullUrl)
+                    .apply(new RequestOptions().frame(1_000_000))
+                    .placeholder(android.R.drawable.ic_media_play)
+                    .error(android.R.drawable.ic_media_play)
+                    .into(holder.imgEvidence);
+                } else {
+                Glide.with(context)
                     .load(fullUrl)
                     .placeholder(android.R.drawable.ic_menu_gallery)
                     .into(holder.imgEvidence);
+                }
 
             holder.itemView.setOnClickListener(v -> {
                 Intent intent = new Intent(context, ViewEvidenceActivity.class);
@@ -62,6 +74,14 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private boolean isVideoUrl(String url) {
+        String lower = url.toLowerCase();
+        return lower.endsWith(".mp4")
+                || lower.endsWith(".webm")
+                || lower.endsWith(".mov")
+                || lower.endsWith(".mkv");
     }
 
     @Override

@@ -53,15 +53,8 @@ public class SmokeAlert extends Service {
     }
 
     private void checkServerForSmoke() {
-        // Get the logged-in User ID so we check the correct history
-        SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
-        int userId = prefs.getInt("user_id", -1);
-
-        // If no one is logged in, do nothing
-        if (userId == -1) return;
-
         // Build the request URL
-        String url = ApiClient.getBaseUrl() + "/history?user_id=" + userId;
+        String url = ApiClient.getBaseUrl() + "/history";
         Request request = new Request.Builder().url(url).build();
 
         // Send request to server

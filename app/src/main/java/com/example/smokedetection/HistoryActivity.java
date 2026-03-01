@@ -77,13 +77,8 @@ public class HistoryActivity extends AppCompatActivity {
     }
 
     private void clearHistoryFromServer() {
-        SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
-        int userId = prefs.getInt("user_id", -1);
-
-        // Prepare data to send to Python server
-        RequestBody formBody = new FormBody.Builder()
-                .add("user_id", String.valueOf(userId))
-                .build();
+        // Send an empty form body (server clears all history in single-owner mode)
+        RequestBody formBody = new FormBody.Builder().build();
 
         Request request = new Request.Builder()
                 .url(ApiClient.getBaseUrl() + "/clear_history")
@@ -107,11 +102,8 @@ public class HistoryActivity extends AppCompatActivity {
     }
 
     private void loadHistory() {
-        SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
-        int userId = prefs.getInt("user_id", -1);
-
         Request request = new Request.Builder()
-                .url(ApiClient.getBaseUrl() + "/history?user_id=" + userId)
+                .url(ApiClient.getBaseUrl() + "/history")
                 .build();
 
         client.newCall(request).enqueue(new Callback() {

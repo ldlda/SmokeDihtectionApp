@@ -28,7 +28,7 @@ public class ApiClient {
      * Persist a new server URL.
      */
     public static void setServer(Context ctx, String url) {
-        // Normalise: strip trailing slash
+        // Normalize: strip trailing slash
         if (url.endsWith("/")) url = url.substring(0, url.length() - 1);
         baseUrl = url;
         ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
