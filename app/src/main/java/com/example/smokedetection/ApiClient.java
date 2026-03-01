@@ -118,4 +118,87 @@ public class ApiClient {
     public static String getStreamUrl() {
         return endpoint("/video_feed");
     }
+
+    // Live runtime endpoints
+
+    public static void getLiveStatus(Callback callback) {
+        Request request = new Request.Builder()
+                .url(endpoint("/live/status"))
+                .build();
+        client.newCall(request).enqueue(callback);
+    }
+
+    public static void liveStart(String source, Callback callback) {
+        FormBody.Builder body = new FormBody.Builder();
+        if (source != null && !source.trim().isEmpty()) {
+            body.add("source", source.trim());
+        }
+        Request request = new Request.Builder()
+                .url(endpoint("/live/start"))
+                .post(body.build())
+                .build();
+        client.newCall(request).enqueue(callback);
+    }
+
+    public static void liveStop(Callback callback) {
+        Request request = new Request.Builder()
+                .url(endpoint("/live/stop"))
+                .post(new FormBody.Builder().build())
+                .build();
+        client.newCall(request).enqueue(callback);
+    }
+
+    public static void livePause(Callback callback) {
+        Request request = new Request.Builder()
+                .url(endpoint("/live/pause"))
+                .post(new FormBody.Builder().build())
+                .build();
+        client.newCall(request).enqueue(callback);
+    }
+
+    public static void liveResume(Callback callback) {
+        Request request = new Request.Builder()
+                .url(endpoint("/live/resume"))
+                .post(new FormBody.Builder().build())
+                .build();
+        client.newCall(request).enqueue(callback);
+    }
+
+    public static void liveSwitchSource(String source, Callback callback) {
+        RequestBody body = new FormBody.Builder()
+                .add("source", source)
+                .build();
+        Request request = new Request.Builder()
+                .url(endpoint("/live/switch_source"))
+                .post(body)
+                .build();
+        client.newCall(request).enqueue(callback);
+    }
+
+    // Clip job endpoints
+
+    public static void submitClipPath(String path, Callback callback) {
+        RequestBody body = new FormBody.Builder()
+                .add("path", path)
+                .build();
+        Request request = new Request.Builder()
+                .url(endpoint("/clips/submit"))
+                .post(body)
+                .build();
+        client.newCall(request).enqueue(callback);
+    }
+
+    public static void listClipJobs(Callback callback) {
+        Request request = new Request.Builder()
+                .url(endpoint("/clips"))
+                .build();
+        client.newCall(request).enqueue(callback);
+    }
+
+    public static void getClipJob(String jobId, Callback callback) {
+        Request request = new Request.Builder()
+                .url(endpoint("/clips/" + jobId))
+                .build();
+        client.newCall(request).enqueue(callback);
+    }
 }
