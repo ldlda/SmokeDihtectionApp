@@ -35,6 +35,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.Response;
+import okhttp3.WebSocket;
+import okhttp3.WebSocketListener;
+import okio.ByteString;
 
 public class StreamActivity extends AppCompatActivity {
 
@@ -42,10 +45,11 @@ public class StreamActivity extends AppCompatActivity {
     private Button btnBack;
     private ExecutorService cameraExecutor;
     private ActivityResultLauncher<String> cameraPermissionLauncher;
-    private final AtomicBoolean uploadInFlight = new AtomicBoolean(false);
+    private final AtomicBoolean frameSocketReady = new AtomicBoolean(false);
     private volatile long lastUploadMs = 0L;
-    private static final long MIN_UPLOAD_INTERVAL_MS = 120;
+    private static final long MIN_UPLOAD_INTERVAL_MS = 33;
     private ProcessCameraProvider cameraProvider;
+    private WebSocket framePushSocket;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -115,9 +119,41 @@ public class StreamActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call call, Response response) {
                 response.close();
+                openFramePushSocket();
                 startCameraPushLoop();
             }
         });
+    }
+
+    private void openFramePushSocket() {
+        closeFramePushSocket();
+        framePushSocket = ApiClient.openFramePushWebSocket(new WebSocketListener() {
+            @Override
+            public void onOpen(WebSocket webSocket, Response response) {
+                frameSocketReady.set(true);
+            }
+
+            @Override
+            public void onFailure(WebSocket webSocket, Throwable t, Response response) {
+                frameSocketReady.set(false);
+                runOnUiThread(() -> Toast.makeText(StreamActivity.this,
+                        "Frame WebSocket disconnected", Toast.LENGTH_SHORT).show());
+            }
+
+            @Override
+            public void onClosed(WebSocket webSocket, int code, String reason) {
+                frameSocketReady.set(false);
+            }
+        });
+    }
+
+    private void closeFramePushSocket() {
+        frameSocketReady.set(false);
+        WebSocket socket = framePushSocket;
+        framePushSocket = null;
+        if (socket != null) {
+            socket.close(1000, "stream closed");
+        }
     }
 
     private void startCameraPushLoop() {
@@ -133,7 +169,12 @@ public class StreamActivity extends AppCompatActivity {
 
                 analysis.setAnalyzer(cameraExecutor, image -> {
                     long now = System.currentTimeMillis();
-                    if (now - lastUploadMs < MIN_UPLOAD_INTERVAL_MS || uploadInFlight.get()) {
+                    if (now - lastUploadMs < MIN_UPLOAD_INTERVAL_MS) {
+                        image.close();
+                        return;
+                    }
+
+                    if (!frameSocketReady.get()) {
                         image.close();
                         return;
                     }
@@ -144,20 +185,15 @@ public class StreamActivity extends AppCompatActivity {
                         return;
                     }
 
-                    lastUploadMs = now;
-                    uploadInFlight.set(true);
-                    ApiClient.pushLiveFrameBytes(jpeg, "phone_frame.jpg", new Callback() {
-                        @Override
-                        public void onFailure(Call call, IOException e) {
-                            uploadInFlight.set(false);
-                        }
+                    WebSocket socket = framePushSocket;
+                    if (socket == null) {
+                        return;
+                    }
 
-                        @Override
-                        public void onResponse(Call call, Response response) {
-                            response.close();
-                            uploadInFlight.set(false);
-                        }
-                    });
+                    boolean sent = socket.send(ByteString.of(jpeg));
+                    if (sent) {
+                        lastUploadMs = now;
+                    }
                 });
 
                 cameraProvider.unbindAll();
@@ -250,5 +286,6 @@ public class StreamActivity extends AppCompatActivity {
         if (cameraExecutor != null) {
             cameraExecutor.shutdownNow();
         }
+        closeFramePushSocket();
     }
 }

@@ -15,11 +15,13 @@ import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
+import okhttp3.WebSocket;
+import okhttp3.WebSocketListener;
 
 public class ApiClient {
     private static final String PREFS = "AppPrefs";
     private static final String KEY_SERVER = "server_url";
-    private static final String DEFAULT_URL = "http://lda.local:8000";
+    private static final String DEFAULT_URL = "http://192.168.100.227:8000";
     private static final OkHttpClient client = new OkHttpClient();
     private static String baseUrl = DEFAULT_URL;
 
@@ -44,6 +46,17 @@ public class ApiClient {
 
     public static String getBaseUrl() {
         return baseUrl;
+    }
+
+    public static String websocketEndpoint(String path) {
+        String wsBase = baseUrl;
+        if (wsBase.startsWith("https://")) {
+            wsBase = "wss://" + wsBase.substring("https://".length());
+        } else if (wsBase.startsWith("http://")) {
+            wsBase = "ws://" + wsBase.substring("http://".length());
+        }
+        if (path.startsWith("/")) return wsBase + path;
+        return wsBase + "/" + path;
     }
 
     public static String endpoint(String path) {
@@ -126,6 +139,28 @@ public class ApiClient {
         return endpoint("/video_feed");
     }
 
+    public static String getUpdatesWebSocketUrl() {
+        return websocketEndpoint("/ws/updates");
+    }
+
+    public static String getFramePushWebSocketUrl() {
+        return websocketEndpoint("/live/ws/push_frames");
+    }
+
+    public static WebSocket openUpdatesWebSocket(WebSocketListener listener) {
+        Request request = new Request.Builder()
+                .url(getUpdatesWebSocketUrl())
+                .build();
+        return client.newWebSocket(request, listener);
+    }
+
+    public static WebSocket openFramePushWebSocket(WebSocketListener listener) {
+        Request request = new Request.Builder()
+                .url(getFramePushWebSocketUrl())
+                .build();
+        return client.newWebSocket(request, listener);
+    }
+
     // Live runtime endpoints
 
     public static void getLiveStatus(Callback callback) {
@@ -178,6 +213,21 @@ public class ApiClient {
         Request request = new Request.Builder()
                 .url(endpoint("/live/switch_source"))
                 .post(body)
+                .build();
+        client.newCall(request).enqueue(callback);
+    }
+
+    public static void liveSwitchPrevious(Callback callback) {
+        Request request = new Request.Builder()
+                .url(endpoint("/live/switch_previous"))
+                .post(new FormBody.Builder().build())
+                .build();
+        client.newCall(request).enqueue(callback);
+    }
+
+    public static void getLiveSourceHistory(Callback callback) {
+        Request request = new Request.Builder()
+                .url(endpoint("/live/source_history"))
                 .build();
         client.newCall(request).enqueue(callback);
     }

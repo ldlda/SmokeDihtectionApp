@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.IOException;
 
@@ -26,6 +27,8 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import okhttp3.WebSocket;
+import okhttp3.WebSocketListener;
 
 public class HistoryActivity extends AppCompatActivity {
 
@@ -33,6 +36,7 @@ public class HistoryActivity extends AppCompatActivity {
     private RecyclerView recyclerHistory;
     private TextView txtEmpty;
     private ImageButton btnBack, btnClear;
+    private WebSocket updatesSocket;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,6 +67,43 @@ public class HistoryActivity extends AppCompatActivity {
 
         // Load Data from Server
         loadHistory();
+    }
+
+    private void connectUpdatesSocket() {
+        closeUpdatesSocket();
+        updatesSocket = ApiClient.openUpdatesWebSocket(new WebSocketListener() {
+            @Override
+            public void onMessage(WebSocket webSocket, String text) {
+                runOnUiThread(() -> applyWebSocketHistory(text));
+            }
+        });
+    }
+
+    private void closeUpdatesSocket() {
+        if (updatesSocket != null) {
+            updatesSocket.close(1000, "history hidden");
+            updatesSocket = null;
+        }
+    }
+
+    private void applyWebSocketHistory(String payload) {
+        try {
+            JSONObject root = new JSONObject(payload);
+            JSONArray data = root.optJSONArray("history");
+            if (data == null) {
+                return;
+            }
+
+            if (data.length() == 0) {
+                txtEmpty.setVisibility(View.VISIBLE);
+                recyclerHistory.setVisibility(View.GONE);
+            } else {
+                txtEmpty.setVisibility(View.GONE);
+                recyclerHistory.setVisibility(View.VISIBLE);
+                recyclerHistory.setAdapter(new HistoryAdapter(HistoryActivity.this, data));
+            }
+        } catch (Exception ignored) {
+        }
     }
 
     private void showClearConfirmation() {
@@ -130,5 +171,17 @@ public class HistoryActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        connectUpdatesSocket();
+    }
+
+    @Override
+    protected void onStop() {
+        closeUpdatesSocket();
+        super.onStop();
     }
 }

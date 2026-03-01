@@ -8,10 +8,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -26,24 +24,24 @@ import androidx.core.view.WindowInsetsCompat;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 
+import org.json.JSONObject;
+
 import java.io.IOException;
 
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.Response;
+import okhttp3.WebSocket;
+import okhttp3.WebSocketListener;
 
 public class MainActivity extends AppCompatActivity {
 
     private ImageView imgCameraPreview;
-    private Button btnLogout, btnRefresh, btnHistory;
-    private Button btnLiveStatus, btnLiveStart, btnLiveStop, btnLivePause, btnLiveResume, btnLiveSwitch;
-    private Button btnClipSubmit, btnClipList, btnClipGet, btnClipPickUpload;
-    private Button btnPhoneLiveStart, btnPhonePushFrame;
-    private View cardCamera;
-    private EditText edtSource, edtClipPath, edtClipJobId;
+    private Button btnLogout, btnRefresh, btnHistory, btnOpenLive;
+    private Button btnClipPickUpload, btnPhoneLiveStart;
     private TextView txtRuntimeStatus;
     private ActivityResultLauncher<String> clipPickerLauncher;
-    private ActivityResultLauncher<String> framePickerLauncher;
+    private WebSocket updatesSocket;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,7 +50,6 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         clipPickerLauncher = registerForActivityResult(new ActivityResultContracts.GetContent(), this::onClipPicked);
-        framePickerLauncher = registerForActivityResult(new ActivityResultContracts.GetContent(), this::onFramePicked);
 
         // Ensure ApiClient has the saved server URL (covers skip-login path)
         ApiClient.init(this);
@@ -75,25 +72,13 @@ public class MainActivity extends AppCompatActivity {
 
         // Bind all views
         imgCameraPreview = findViewById(R.id.imgCameraPreview);
-        cardCamera = findViewById(R.id.cardCamera);
+        View cardCamera = findViewById(R.id.cardCamera);
         btnLogout = findViewById(R.id.btnLogout);
         btnRefresh = findViewById(R.id.btnRefresh);
         btnHistory = findViewById(R.id.btnHistory);
-        btnLiveStatus = findViewById(R.id.btnLiveStatus);
-        btnLiveStart = findViewById(R.id.btnLiveStart);
-        btnLiveStop = findViewById(R.id.btnLiveStop);
-        btnLivePause = findViewById(R.id.btnLivePause);
-        btnLiveResume = findViewById(R.id.btnLiveResume);
-        btnLiveSwitch = findViewById(R.id.btnLiveSwitch);
-        btnClipSubmit = findViewById(R.id.btnClipSubmit);
-        btnClipList = findViewById(R.id.btnClipList);
-        btnClipGet = findViewById(R.id.btnClipGet);
+        btnOpenLive = findViewById(R.id.btnOpenLive);
         btnClipPickUpload = findViewById(R.id.btnClipPickUpload);
         btnPhoneLiveStart = findViewById(R.id.btnPhoneLiveStart);
-        btnPhonePushFrame = findViewById(R.id.btnPhonePushFrame);
-        edtSource = findViewById(R.id.edtSource);
-        edtClipPath = findViewById(R.id.edtClipPath);
-        edtClipJobId = findViewById(R.id.edtClipJobId);
         txtRuntimeStatus = findViewById(R.id.txtRuntimeStatus);
 
         // Start background service safely
@@ -113,6 +98,10 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(MainActivity.this, StreamActivity.class);
             startActivity(intent);
         });
+        btnOpenLive.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, StreamActivity.class);
+            startActivity(intent);
+        });
 
         btnRefresh.setOnClickListener(v -> refreshSnapshot());
 
@@ -121,41 +110,8 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        btnLiveStatus.setOnClickListener(v -> runAction("Live Status", cb -> ApiClient.getLiveStatus(cb)));
-        btnLiveStart.setOnClickListener(v -> runAction("Live Start", cb -> ApiClient.liveStart(edtSource.getText().toString(), cb)));
-        btnLiveStop.setOnClickListener(v -> runAction("Live Stop", cb -> ApiClient.liveStop(cb)));
-        btnLivePause.setOnClickListener(v -> runAction("Live Pause", cb -> ApiClient.livePause(cb)));
-        btnLiveResume.setOnClickListener(v -> runAction("Live Resume", cb -> ApiClient.liveResume(cb)));
-        btnLiveSwitch.setOnClickListener(v -> {
-            String source = edtSource.getText().toString().trim();
-            if (source.isEmpty()) {
-                Toast.makeText(this, "Enter source first", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            runAction("Live Switch", cb -> ApiClient.liveSwitchSource(source, cb));
-        });
-
-        btnClipSubmit.setOnClickListener(v -> {
-            String clipPath = edtClipPath.getText().toString().trim();
-            if (clipPath.isEmpty()) {
-                Toast.makeText(this, "Enter clip path first", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            runAction("Clip Submit", cb -> ApiClient.submitClipPath(clipPath, cb));
-        });
         btnClipPickUpload.setOnClickListener(v -> clipPickerLauncher.launch("*/*"));
-        btnClipList.setOnClickListener(v -> runAction("Clips List", cb -> ApiClient.listClipJobs(cb)));
-        btnClipGet.setOnClickListener(v -> {
-            String jobId = edtClipJobId.getText().toString().trim();
-            if (jobId.isEmpty()) {
-                Toast.makeText(this, "Enter job id first", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            runAction("Clip Get", cb -> ApiClient.getClipJob(jobId, cb));
-        });
-
-        btnPhoneLiveStart.setOnClickListener(v -> runAction("Phone Live Start", cb -> ApiClient.startPhoneLive(cb)));
-        btnPhonePushFrame.setOnClickListener(v -> framePickerLauncher.launch("image/*"));
+        btnPhoneLiveStart.setOnClickListener(v -> runAction("Phone Live", cb -> ApiClient.startPhoneLive(cb)));
 
         btnLogout.setOnClickListener(v -> {
             getSharedPreferences("AppPrefs", MODE_PRIVATE).edit().clear().apply();
@@ -164,7 +120,7 @@ public class MainActivity extends AppCompatActivity {
             finish();
         });
 
-        runAction("Live Status", cb -> ApiClient.getLiveStatus(cb));
+        runAction("Ready", cb -> ApiClient.getLiveStatus(cb));
     }
 
     private void refreshSnapshot() {
@@ -192,11 +148,85 @@ public class MainActivity extends AppCompatActivity {
             public void onResponse(Call call, Response response) throws IOException {
                 String body = response.body() != null ? response.body().string() : "";
                 runOnUiThread(() -> {
-                    String shortBody = body.length() > 1000 ? body.substring(0, 1000) + "..." : body;
-                    setStatus(label + " -> HTTP " + response.code() + "\n" + shortBody, response.code() >= 400);
+                    if (response.code() >= 400) {
+                        String shortBody = body.length() > 500 ? body.substring(0, 500) + "..." : body;
+                        setStatus(label + " failed (" + response.code() + ")\n" + shortBody, true);
+                    } else {
+                        setStatus(label + " successful", false);
+                    }
                 });
             }
         });
+    }
+
+    private void connectUpdatesSocket() {
+        closeUpdatesSocket();
+        updatesSocket = ApiClient.openUpdatesWebSocket(new WebSocketListener() {
+            @Override
+            public void onOpen(WebSocket webSocket, Response response) {
+                runOnUiThread(() -> setStatus("Connected to live updates", false));
+            }
+
+            @Override
+            public void onMessage(WebSocket webSocket, String text) {
+                runOnUiThread(() -> renderSnapshotStatus(text));
+            }
+
+            @Override
+            public void onFailure(WebSocket webSocket, Throwable t, Response response) {
+                runOnUiThread(() -> setStatus("Live updates disconnected. Check server/network.", true));
+            }
+        });
+    }
+
+    private void closeUpdatesSocket() {
+        if (updatesSocket != null) {
+            updatesSocket.close(1000, "screen hidden");
+            updatesSocket = null;
+        }
+    }
+
+    private void renderSnapshotStatus(String payload) {
+        try {
+            JSONObject root = new JSONObject(payload);
+            JSONObject live = root.optJSONObject("live");
+
+            String statusLine = "Live status unavailable";
+            boolean isError = false;
+            if (live != null) {
+                boolean starting = live.optBoolean("starting", false);
+                boolean running = live.optBoolean("running", false);
+                boolean paused = live.optBoolean("paused", false);
+                String source = live.optString("source", "");
+                String lastError = live.optString("last_error", "");
+
+                if (starting) {
+                    statusLine = "Starting camera...";
+                } else if (paused) {
+                    statusLine = "Live is paused";
+                } else if (running) {
+                    statusLine = "Live is running";
+                    if (!source.isEmpty()) {
+                        statusLine += " (source: " + source + ")";
+                    }
+                } else {
+                    statusLine = "Live is stopped";
+                }
+
+                if (!lastError.isEmpty() && !"null".equalsIgnoreCase(lastError)) {
+                    isError = true;
+                    statusLine += "\nIssue: " + lastError;
+                }
+            }
+
+            int historyCount = root.optInt("history_count", -1);
+            if (historyCount >= 0) {
+                statusLine += "\nAlerts in history: " + historyCount;
+            }
+            setStatus(statusLine, isError);
+        } catch (Exception e) {
+            setStatus("Connected, waiting for updates...", false);
+        }
     }
 
     private void setStatus(String message, boolean isError) {
@@ -206,11 +236,18 @@ public class MainActivity extends AppCompatActivity {
 
     private void onClipPicked(Uri uri) {
         if (uri == null) return;
-        runAction("Clip Upload", cb -> ApiClient.submitClipFile(this, uri, "mobile_upload", cb));
+        runAction("Upload Clip", cb -> ApiClient.submitClipFile(this, uri, "mobile_upload", cb));
     }
 
-    private void onFramePicked(Uri uri) {
-        if (uri == null) return;
-        runAction("Push Phone Frame", cb -> ApiClient.pushLiveFrame(this, uri, "phone_frame.jpg", cb));
+    @Override
+    protected void onStart() {
+        super.onStart();
+        connectUpdatesSocket();
+    }
+
+    @Override
+    protected void onStop() {
+        closeUpdatesSocket();
+        super.onStop();
     }
 }

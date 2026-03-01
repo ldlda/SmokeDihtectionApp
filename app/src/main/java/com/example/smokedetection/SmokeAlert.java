@@ -7,35 +7,30 @@ import android.app.Service;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.IOException;
 
-import okhttp3.Call;
-import okhttp3.Callback;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import okhttp3.WebSocket;
+import okhttp3.WebSocketListener;
 
 public class SmokeAlert extends Service {
 
-    // Configuration: How often to check the server (in milliseconds)
-    private static final int CHECK_INTERVAL = 5000;
+    private static final int RECONNECT_DELAY_MS = 3000;
 
-    private Handler handler = new Handler();
-    private OkHttpClient client = new OkHttpClient();
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private final OkHttpClient client = new OkHttpClient();
+    private WebSocket updatesSocket;
+    private boolean serviceStopped = false;
     private String lastAlertTimestamp = ""; // Keeps track of the last alert we saw
-    // The Loop
-    private final Runnable checkServerRunnable = new Runnable() {
-        @Override
-        public void run() {
-            checkServerForSmoke();
-            // Schedule this same function to run again in 5 seconds
-            handler.postDelayed(this, CHECK_INTERVAL);
-        }
-    };
+    private boolean initializedFromHistory = false;
+    private final Runnable reconnectRunnable = this::connectUpdatesSocket;
 
     @Override
     public void onCreate() {
@@ -47,54 +42,87 @@ public class SmokeAlert extends Service {
         // this app is important and shouldn't be killed to save battery.
         startForeground(1, getNotification("Monitoring active..."));
 
-        // Start the repeating check loop
-        handler.post(checkServerRunnable);
+        connectUpdatesSocket();
     }
 
-    private void checkServerForSmoke() {
-        // Build the request URL
-        String url = ApiClient.getHistoryUrl();
-        Request request = new Request.Builder().url(url).build();
+    private void connectUpdatesSocket() {
+        if (serviceStopped) {
+            return;
+        }
 
-        // Send request to server
-        client.newCall(request).enqueue(new Callback() {
+        closeUpdatesSocket();
+
+        Request request = new Request.Builder()
+                .url(ApiClient.getUpdatesWebSocketUrl())
+                .build();
+
+        updatesSocket = client.newWebSocket(request, new WebSocketListener() {
             @Override
-            public void onFailure(Call call, IOException e) {
-                // Silent fail: If internet is down, don't annoy the user
+            public void onOpen(WebSocket webSocket, Response response) {
+                handler.removeCallbacks(reconnectRunnable);
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                if (!response.isSuccessful()) return;
+            public void onMessage(WebSocket webSocket, String text) {
+                handleSnapshotMessage(text);
+            }
 
-                try {
-                    String body = response.body().string();
-                    JSONArray alerts = new JSONArray(body);
+            @Override
+            public void onFailure(WebSocket webSocket, Throwable t, Response response) {
+                scheduleReconnect();
+            }
 
-                    // If we have any alerts in the history
-                    if (alerts.length() > 0) {
-                        // Get the most recent one (Item 0)
-                        JSONObject latest = alerts.getJSONObject(0);
-                        String timestamp = latest.getString("timestamp");
-
-                        // Check if this timestamp is different from the last one we saw
-                        if (!timestamp.equals(lastAlertTimestamp)) {
-
-                            // Only trigger alert if this isn't the first time the app loaded
-                            // --> Not beep immediately just for loading old history
-                            if (!lastAlertTimestamp.isEmpty()) {
-                                triggerDangerNotification();
-                            }
-
-                            // Update our memory so we don't alert again for this same event
-                            lastAlertTimestamp = timestamp;
-                        }
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+            @Override
+            public void onClosed(WebSocket webSocket, int code, String reason) {
+                scheduleReconnect();
             }
         });
+    }
+
+    private void handleSnapshotMessage(String payload) {
+        try {
+            JSONObject root = new JSONObject(payload);
+            JSONArray alerts = root.optJSONArray("history");
+            if (alerts == null || alerts.length() == 0) {
+                if (!initializedFromHistory) {
+                    initializedFromHistory = true;
+                }
+                return;
+            }
+
+            JSONObject latest = alerts.getJSONObject(0);
+            String timestamp = latest.optString("timestamp", "");
+            if (timestamp.isEmpty()) {
+                return;
+            }
+
+            if (!initializedFromHistory) {
+                lastAlertTimestamp = timestamp;
+                initializedFromHistory = true;
+                return;
+            }
+
+            if (!timestamp.equals(lastAlertTimestamp)) {
+                triggerDangerNotification();
+                lastAlertTimestamp = timestamp;
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void scheduleReconnect() {
+        if (serviceStopped) {
+            return;
+        }
+        handler.removeCallbacks(reconnectRunnable);
+        handler.postDelayed(reconnectRunnable, RECONNECT_DELAY_MS);
+    }
+
+    private void closeUpdatesSocket() {
+        if (updatesSocket != null) {
+            updatesSocket.close(1000, "service stop");
+            updatesSocket = null;
+        }
     }
 
     private void triggerDangerNotification() {
@@ -143,8 +171,9 @@ public class SmokeAlert extends Service {
 
     @Override
     public void onDestroy() {
-        // Stop the loop when service is destroyed
-        handler.removeCallbacks(checkServerRunnable);
+        serviceStopped = true;
+        handler.removeCallbacks(reconnectRunnable);
+        closeUpdatesSocket();
         super.onDestroy();
     }
 }

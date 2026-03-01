@@ -12,12 +12,12 @@
         android:padding="20dp">
 
     <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="20dp"
-        android:text="My Cameras"
-        android:textSize="24sp"
-        android:textStyle="bold" />
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            android:text="Smoke Detection"
+            android:textSize="24sp"
+            android:textStyle="bold" />
 
     <androidx.cardview.widget.CardView
         android:id="@+id/cardCamera"
@@ -41,195 +41,49 @@
                 android:src="@android:drawable/ic_menu_camera" />
 
             <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="15dp"
-                android:text="Corridor"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="15dp"
+                    android:text="Live Camera"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
     <Button
-        android:id="@+id/btnRefresh"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:text="Refresh Snapshot" />
+            android:id="@+id/btnOpenLive"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="Open Live View" />
 
     <Button
-        android:id="@+id/btnHistory"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:backgroundTint="#FF9800"
-        android:text="View Alert History" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:text="Live Controls"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-        <EditText
-            android:id="@+id/edtSource"
+            android:id="@+id/btnRefresh"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:hint="Source (e.g. 0, 1, rtsp://...)"
-            android:singleLine="true"
-            android:text="2" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="horizontal">
-
-            <Button
-                android:id="@+id/btnLiveStatus"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Status" />
-
-            <Button
-                android:id="@+id/btnLiveStart"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_weight="1"
-                android:text="Start" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="horizontal">
-
-            <Button
-                android:id="@+id/btnLivePause"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Pause" />
-
-            <Button
-                android:id="@+id/btnLiveResume"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_weight="1"
-                android:text="Resume" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="horizontal">
-
-            <Button
-                android:id="@+id/btnLiveSwitch"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Switch Source" />
-
-            <Button
-                android:id="@+id/btnLiveStop"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_weight="1"
-                android:text="Stop" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="horizontal">
-
-            <Button
-                android:id="@+id/btnPhoneLiveStart"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Start Phone Live" />
-
-            <Button
-                android:id="@+id/btnPhonePushFrame"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_weight="1"
-                android:text="Push Phone Frame" />
-        </LinearLayout>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:text="Clip Jobs"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-        <EditText
-            android:id="@+id/edtClipPath"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:hint="Clip path (e.g. test_media/file.mp4)"
-            android:singleLine="true"
-            android:text="test_media/139474-772542450_medium.mp4" />
+            android:layout_marginTop="10dp"
+            android:text="Refresh Snapshot" />
 
         <Button
-            android:id="@+id/btnClipSubmit"
+            android:id="@+id/btnPhoneLiveStart"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Submit Clip Path" />
+            android:layout_marginTop="10dp"
+            android:text="Use Phone Camera as Live Source" />
 
         <Button
             android:id="@+id/btnClipPickUpload"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Pick &amp; Upload Image/Video" />
+            android:layout_marginTop="10dp"
+            android:text="Upload Image/Video Clip" />
 
-        <LinearLayout
+        <Button
+            android:id="@+id/btnHistory"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="horizontal">
-
-            <Button
-                android:id="@+id/btnClipList"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="List Jobs" />
-
-            <Button
-                android:id="@+id/btnClipGet"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_weight="1"
-                android:text="Get Job" />
-        </LinearLayout>
-
-        <EditText
-            android:id="@+id/edtClipJobId"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:hint="Job ID for Get Job"
-            android:singleLine="true" />
+            android:layout_marginTop="10dp"
+            android:text="View Alert History" />
 
         <TextView
             android:id="@+id/txtRuntimeStatus"
