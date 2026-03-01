@@ -19,8 +19,8 @@ import org.json.JSONObject;
 
 public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHolder> {
 
+    private final Context context;
     private JSONArray data;
-    private Context context;
 
     public HistoryAdapter(Context context, JSONArray data) {
         this.context = context;
@@ -46,23 +46,23 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
 
             // Load Image from Python Server
             // Add the Base URL: "http://192...:8000/static/alerts/..."
-            String fullUrl = ApiClient.getBaseUrl() + item.getString("image_path");
+            String fullUrl = ApiClient.resolveMediaUrl(item.getString("image_path"));
 
-                boolean isVideo = isVideoUrl(fullUrl);
+            boolean isVideo = isVideoUrl(fullUrl);
 
-                if (isVideo) {
+            if (isVideo) {
                 Glide.with(context)
-                    .load(fullUrl)
-                    .apply(new RequestOptions().frame(1_000_000))
-                    .placeholder(android.R.drawable.ic_media_play)
-                    .error(android.R.drawable.ic_media_play)
-                    .into(holder.imgEvidence);
-                } else {
+                        .load(fullUrl)
+                        .apply(new RequestOptions().frame(1_000_000))
+                        .placeholder(android.R.drawable.ic_media_play)
+                        .error(android.R.drawable.ic_media_play)
+                        .into(holder.imgEvidence);
+            } else {
                 Glide.with(context)
-                    .load(fullUrl)
-                    .placeholder(android.R.drawable.ic_menu_gallery)
-                    .into(holder.imgEvidence);
-                }
+                        .load(fullUrl)
+                        .placeholder(android.R.drawable.ic_menu_gallery)
+                        .into(holder.imgEvidence);
+            }
 
             holder.itemView.setOnClickListener(v -> {
                 Intent intent = new Intent(context, ViewEvidenceActivity.class);

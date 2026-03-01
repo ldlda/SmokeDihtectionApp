@@ -5,7 +5,6 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.IBinder;
 
@@ -29,7 +28,7 @@ public class SmokeAlert extends Service {
     private OkHttpClient client = new OkHttpClient();
     private String lastAlertTimestamp = ""; // Keeps track of the last alert we saw
     // The Loop
-    private Runnable checkServerRunnable = new Runnable() {
+    private final Runnable checkServerRunnable = new Runnable() {
         @Override
         public void run() {
             checkServerForSmoke();
@@ -54,7 +53,7 @@ public class SmokeAlert extends Service {
 
     private void checkServerForSmoke() {
         // Build the request URL
-        String url = ApiClient.getBaseUrl() + "/history";
+        String url = ApiClient.getHistoryUrl();
         Request request = new Request.Builder().url(url).build();
 
         // Send request to server

@@ -39,6 +39,36 @@ public class ApiClient {
         return baseUrl;
     }
 
+    public static String endpoint(String path) {
+        if (path.startsWith("/")) return baseUrl + path;
+        return baseUrl + "/" + path;
+    }
+
+    public static String getHistoryUrl() {
+        return getHistoryUrl(null);
+    }
+
+    public static String getHistoryUrl(Integer userId) {
+        if (userId == null) return endpoint("/history");
+        return endpoint("/history?user_id=" + userId);
+    }
+
+    public static RequestBody buildClearHistoryBody(Integer userId) {
+        FormBody.Builder builder = new FormBody.Builder();
+        if (userId != null) {
+            builder.add("user_id", String.valueOf(userId));
+        }
+        return builder.build();
+    }
+
+    public static String getClearHistoryUrl() {
+        return endpoint("/clear_history");
+    }
+
+    public static String resolveMediaUrl(String imagePath) {
+        return endpoint(imagePath);
+    }
+
     // Authentication
 
     public static void login(String username, String password, Callback callback) {
@@ -48,7 +78,7 @@ public class ApiClient {
                 .build();
 
         Request request = new Request.Builder()
-                .url(baseUrl + "/login")
+            .url(endpoint("/login"))
                 .post(formBody)
                 .build();
 
@@ -62,7 +92,7 @@ public class ApiClient {
                 .build();
 
         Request request = new Request.Builder()
-                .url(baseUrl + "/register")
+            .url(endpoint("/register"))
                 .post(formBody)
                 .build();
 
@@ -74,7 +104,7 @@ public class ApiClient {
      */
     public static void ping(Callback callback) {
         Request request = new Request.Builder()
-                .url(baseUrl + "/ping")
+            .url(endpoint("/ping"))
                 .build();
         client.newCall(request).enqueue(callback);
     }
@@ -82,10 +112,10 @@ public class ApiClient {
     // Camera URLs
 
     public static String getSnapshotUrl() {
-        return baseUrl + "/snapshot";
+        return endpoint("/snapshot");
     }
 
     public static String getStreamUrl() {
-        return baseUrl + "/video_feed";
+        return endpoint("/video_feed");
     }
 }

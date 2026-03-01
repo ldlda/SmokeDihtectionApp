@@ -1,6 +1,5 @@
 package com.example.smokedetection;
 
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageButton;
@@ -30,10 +29,10 @@ import okhttp3.Response;
 
 public class HistoryActivity extends AppCompatActivity {
 
+    private final OkHttpClient client = new OkHttpClient();
     private RecyclerView recyclerHistory;
     private TextView txtEmpty;
     private ImageButton btnBack, btnClear;
-    private OkHttpClient client = new OkHttpClient();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,22 +67,15 @@ public class HistoryActivity extends AppCompatActivity {
 
     private void showClearConfirmation() {
         // Create the popup dialog
-        new AlertDialog.Builder(this)
-                .setTitle("Clear History")
-                .setMessage("Are you sure you want to clear the history ? This cannot be undone !!!")
-                .setPositiveButton("Yes, Clear All", (dialog, which) -> clearHistoryFromServer())
-                .setNegativeButton("Cancel", null)
-                .show();
+        new AlertDialog.Builder(this).setTitle("Clear History").setMessage("Are you sure you want to clear the history ? This cannot be undone !!!").setPositiveButton("Yes, Clear All", (dialog, which) -> clearHistoryFromServer()).setNegativeButton("Cancel", null).show();
     }
 
     private void clearHistoryFromServer() {
-        // Send an empty form body (server clears all history in single-owner mode)
-        RequestBody formBody = new FormBody.Builder().build();
+        // Optional user filter support exists: ApiClient.buildClearHistoryBody(userId)
+        // Current mode clears globally, so we pass null.
+        RequestBody formBody = ApiClient.buildClearHistoryBody(null);
 
-        Request request = new Request.Builder()
-                .url(ApiClient.getBaseUrl() + "/clear_history")
-                .post(formBody)
-                .build();
+        Request request = new Request.Builder().url(ApiClient.getClearHistoryUrl()).post(formBody).build();
 
         client.newCall(request).enqueue(new Callback() {
             @Override
@@ -102,9 +94,7 @@ public class HistoryActivity extends AppCompatActivity {
     }
 
     private void loadHistory() {
-        Request request = new Request.Builder()
-                .url(ApiClient.getBaseUrl() + "/history")
-                .build();
+        Request request = new Request.Builder().url(ApiClient.getHistoryUrl()).build();
 
         client.newCall(request).enqueue(new Callback() {
             @Override
